@@ -1,0 +1,12 @@
+{
+  "name": "S3Triggere50c16fe",
+  "version": "2.0.0",
+  "description": "The photo uploads processor",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "gm": "^1.23.1",
+    "sharp": "^0.20.2",
+    "uuid": "^3.3.2"
+  }
+}

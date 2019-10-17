@@ -1,0 +1,19 @@
+{
+    "master": {
+        "awscloudformation": {
+            "AuthRoleName": "picinfo-master-20191014155234-authRole",
+            "UnauthRoleArn": "arn:aws:iam::507313738735:role/picinfo-master-20191014155234-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::507313738735:role/picinfo-master-20191014155234-authRole",
+            "Region": "us-west-2",
+            "DeploymentBucketName": "picinfo-master-20191014155234-deployment",
+            "UnauthRoleName": "picinfo-master-20191014155234-unauthRole",
+            "StackName": "picinfo-master-20191014155234",
+            "StackId": "arn:aws:cloudformation:us-west-2:507313738735:stack/picinfo-master-20191014155234/4f57ce30-eed5-11e9-9bd2-0a8b7f3d9ee0"
+        },
+        "categories": {
+            "auth": {
+                "picinfo140ddd02": {}
+            }
+        }
+    }
+}

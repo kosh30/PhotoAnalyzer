@@ -1,26 +1,44 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, {Component} from 'react';
+import { Grid } from 'semantic-ui-react';
+import Amplify from 'aws-amplify';
+import aws_exports from './aws-exports';
+import { withAuthenticator } from 'aws-amplify-react';
+import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
+import NewAlbum from './components/NewAlbum';
+import AlbumDetailsLoader from './components/AlbumDetailsLoader';
+import AlbumsListLoader from './components/AlbumsListLoader';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+Amplify.configure(aws_exports);
+
+class App extends Component {
+  render() {
+    console.log('App: ', this.props);
+
+    return (
+      <Router>
+        <Grid padded>
+          <Grid.Column>
+            <Route path="/" exact component={NewAlbum} />
+            <Route path="/" exact
+              render={() => <AlbumsListLoader owner={this.props.authState==='signedIn'?this.props.authData.username:null} /> }
+            />
+
+            <Route
+              path="/albums/:albumId"
+              render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
+            />
+            <Route
+              path="/albums/:albumId"
+              render={props => <AlbumDetailsLoader
+                id={props.match.params.albumId}
+                owner={this.props.authData.username}
+              />}
+            />
+          </Grid.Column>
+        </Grid>
+      </Router>
+    );
+  };
 }
 
-export default App;
+export default withAuthenticator(App, {includeGreetings: true});
