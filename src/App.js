@@ -7,6 +7,7 @@ import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
 import NewAlbum from './components/NewAlbum';
 import AlbumDetailsLoader from './components/AlbumDetailsLoader';
 import AlbumsListLoader from './components/AlbumsListLoader';
+import Search from './components/Search';
 
 Amplify.configure(aws_exports);
 
@@ -22,6 +23,7 @@ class App extends Component {
             <Route path="/" exact
               render={() => <AlbumsListLoader owner={this.props.authState==='signedIn'?this.props.authData.username:null} /> }
             />
+            <Route path="/" exact component={Search}/>
 
             <Route
               path="/albums/:albumId"

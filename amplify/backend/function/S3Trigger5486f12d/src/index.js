@@ -2,19 +2,30 @@ const AWS = require('aws-sdk');
 const S3 = new AWS.S3({ signatureVersion: 'v4' });
 const DynamoDBDocClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const uuidv4 = require('uuid/v4');
-
-/*
-Note: Sharp requires native extensions to be installed in a way that is compatible
-with Amazon Linux (in order to run successfully in a Lambda execution environment).
-
-If you're not working in Cloud9, you can follow the instructions on http://sharp.pixelplumbing.com/en/stable/install/#aws-lambda how to install the module and native dependencies.
-*/
 const gm = require('gm').subClass({imageMagick: true});
+const { promisify } = require('util');
+const Rekognition = new AWS.Rekognition();
 
 // We'll expect these environment variables to be defined when the Lambda function is deployed
 const THUMBNAIL_WIDTH = parseInt(process.env.THUMBNAIL_WIDTH, 10);
 const THUMBNAIL_HEIGHT = parseInt(process.env.THUMBNAIL_HEIGHT, 10);
 const DYNAMODB_PHOTOS_TABLE_NAME = process.env.DYNAMODB_PHOTOS_TABLE_ARN.split('/')[1];
+
+async function getLabelNames(bucketName, key) {
+  let params = {
+    Image: {
+      S3Object: {
+        Bucket: bucketName, 
+        Name: key
+      }
+    }, 
+    MaxLabels: 50, 
+    MinConfidence: 70
+  };
+  const detectionResult = await Rekognition.detectLabels(params).promise();
+  const labelNames = detectionResult.Labels.map((l) => l.Name.toLowerCase()); 
+  return labelNames;
+}
 
 function storePhotoInfo(item) {
 	const params = {
@@ -37,17 +48,38 @@ function fullsizeKey(filename) {
 	return `public/${filename}`;
 }
 
-function makeThumbnail(photo) {
-	return gm(photo).resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT).toBuffer();
-}
+// function makeThumbnail(photo) {
+//   return gm(photo).resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT).toBuffer((err, buffer) => {
+//     if (err) console.log(err);
+//     else return buffer;
+//   });
+// }
 
 async function resize(bucketName, key) {
-	const originalPhoto = (await S3.getObject({ Bucket: bucketName, Key: key }).promise()).Body;
-	const originalPhotoName = key.replace('uploads/', '');
-  const getSize = require('util').promisify(gm(originalPhoto).size);
-  const originalPhotoDimensions = await getSize();
+  const originalPhoto = (await S3.getObject({ Bucket: bucketName, Key: key }).promise()).Body;
+  console.log('got origin photo: ', bucketName, key)
+  const originalPhotoName = key.replace('uploads/', '');
 
-	const thumbnail = await makeThumbnail(originalPhoto);
+  const gmStream = gm(originalPhoto);
+  const getSizeProm = promisify(gmStream.size).bind(gmStream);
+  let originalPhotoDimensions = {width: 0, height: 0};
+  try {
+    originalPhotoDimensions = await getSizeProm();
+    console.log('got origin dimension: ', originalPhotoDimensions)
+  } catch(err){
+    console.error("Error getting size: ",err)
+  }
+
+  // const thumbnail = await makeThumbnail(originalPhoto);
+  const resizeOutput = gmStream.resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+  const toBufferProm = promisify(resizeOutput.toBuffer).bind(resizeOutput);
+  let thumbnail = null;
+  try {
+    thumbnail = await toBufferProm();
+    console.log('Resize done')
+  } catch (err) {
+    console.error("Error resizing: ",err)
+  }
 
 	await Promise.all([
 		S3.putObject({
@@ -93,10 +125,13 @@ async function processRecord(record) {
 	
 	const metadata = await getMetadata(bucketName, key);
 	const sizes = await resize(bucketName, key);    
-	const id = uuidv4();
+  if (!sizes) throw Error;
+  const labelNames = await getLabelNames(bucketName, sizes.fullsize.key);
+  const id = uuidv4();
 	const item = {
 		id: id,
-		owner: metadata.owner,
+    owner: metadata.owner,
+    labels: labelNames,
 		photoAlbumId: metadata.albumid,
 		bucket: bucketName,
 		thumbnail: sizes.thumbnail,

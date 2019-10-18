@@ -1,6 +1,6 @@
 {
 	"auth": {
-		"picinfo140ddd02": {
+		"picinfoed643932": {
 			"service": "Cognito",
 			"providerPlugin": "awscloudformation",
 			"dependsOn": []
@@ -16,7 +16,7 @@
 					"defaultAuthentication": {
 						"authenticationType": "AMAZON_COGNITO_USER_POOLS",
 						"userPoolConfig": {
-							"userPoolId": "authpicinfo140ddd02"
+							"userPoolId": "authpicinfoed643932"
 						}
 					}
 				}
@@ -24,20 +24,20 @@
 		}
 	},
 	"function": {
-		"S3Triggere50c16fe": {
+		"S3Trigger5486f12d": {
 			"service": "Lambda",
 			"providerPlugin": "awscloudformation",
 			"build": true
 		}
 	},
 	"storage": {
-		"picInfoS3": {
+		"picinfoS3": {
 			"service": "S3",
 			"providerPlugin": "awscloudformation",
 			"dependsOn": [
 				{
 					"category": "function",
-					"resourceName": "S3Triggere50c16fe",
+					"resourceName": "S3Trigger5486f12d",
 					"attributes": [
 						"Name",
 						"Arn",

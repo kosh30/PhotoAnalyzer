@@ -7,7 +7,7 @@
 		},
 		"DynamoDBPhotoTableArn": {
 			"Type": "String",
-			"Default": "arn:aws:dynamodb:us-west-2:507313738735:table/Photo-satho3jbcfdthfrqkwcgw7ljge-master"
+			"Default": "arn:aws:dynamodb:us-west-2:507313738735:table/Photo-5fe2mhi6tneulg3c7kwgewf4nm-master"
 		}
 	},
 	"Conditions": {
@@ -32,12 +32,12 @@
 				"FunctionName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"S3Triggere50c16fe",
+						"S3Trigger5486f12d",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"S3Triggere50c16fe",
+									"S3Trigger5486f12d",
 									"-",
 									{
 										"Ref": "env"
@@ -68,8 +68,8 @@
 				"Runtime": "nodejs8.10",
 				"Timeout": "25",
 				"Code": {
-					"S3Bucket": "picinfo-master-20191014155234-deployment",
-					"S3Key": "amplify-builds/S3Triggere50c16fe-555662374f624d306c64-build.zip"
+					"S3Bucket": "picinfo-master-20191017144455-deployment",
+					"S3Key": "amplify-builds/S3Trigger5486f12d-74502b6d46755354622b-build.zip"
 				}
 			}
 		},
@@ -79,12 +79,12 @@
 				"RoleName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"S3Triggere50c16feLambdaRolee50c16fe",
+						"S3Trigger5486f12dLambdaRole5486f12d",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"S3Triggere50c16feLambdaRolee50c16fe",
+									"S3Trigger5486f12dLambdaRole5486f12d",
 									"-",
 									{
 										"Ref": "env"
