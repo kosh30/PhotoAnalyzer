@@ -6,13 +6,14 @@ type Album @model @auth(rules: [{allow: owner}]) {
     photos: [Photo] @connection(name: "AlbumPhotos")
 }
 
-type Photo @model @auth(rules: [{allow: owner}]) @searchable {
+type Photo @model @auth(rules: [{allow: owner}]){
     id: ID!
     album: Album @connection(name: "AlbumPhotos")
     bucket: String!
     fullsize: PhotoS3Info!
     thumbnail: PhotoS3Info!
     labels: [String!]
+    words: [String!]
 }
 
 type PhotoS3Info {

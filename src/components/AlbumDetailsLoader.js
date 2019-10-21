@@ -19,6 +19,8 @@ const GetAlbum = `query GetAlbum($id: ID!, $nextTokenForPhotos: String) {
         height
         key
       }
+      labels
+      words
     }
   }
 }}
@@ -29,49 +31,49 @@ class AlbumDetailsLoader extends Component {
     super(props);
 
     this.state = {
-        nextTokenForPhotos: null,
-        hasMorePhotos: true,
-        album: null,
-        loading: true
+      nextTokenForPhotos: null,
+      hasMorePhotos: true,
+      album: null,
+      loading: true
     }
-}
+  }
 
-async loadMorePhotos() {
+  async loadMorePhotos() {
     if (!this.state.hasMorePhotos) return;
 
     this.setState({ loading: true });
-    const { data } = await API.graphql(graphqlOperation(GetAlbum, {id: this.props.id, nextTokenForPhotos: this.state.nextTokenForPhotos}));
+    const { data } = await API.graphql(graphqlOperation(GetAlbum, { id: this.props.id, nextTokenForPhotos: this.state.nextTokenForPhotos }));
 
     let album;
     if (this.state.album === null) {
-        album = data.getAlbum;
+      album = data.getAlbum;
     } else {
-        album = this.state.album;
-        album.photos.items = album.photos.items.concat(data.getAlbum.photos.items);
+      album = this.state.album;
+      album.photos.items = album.photos.items.concat(data.getAlbum.photos.items);
     }
-    this.setState({ 
-        album: album,
-        loading: false,
-        nextTokenForPhotos: data.getAlbum.photos.nextToken,
-        hasMorePhotos: data.getAlbum.photos.nextToken !== null
+    this.setState({
+      album: album,
+      loading: false,
+      nextTokenForPhotos: data.getAlbum.photos.nextToken,
+      hasMorePhotos: data.getAlbum.photos.nextToken !== null
     });
-}
+  }
 
-componentDidMount() {
+  componentDidMount() {
     this.loadMorePhotos();
-}
+  }
 
-render() {
+  render() {
     return (
-        <AlbumDetails 
-            loadingPhotos={this.state.loading} 
-            album={this.state.album} 
-            loadMorePhotos={this.loadMorePhotos.bind(this)} 
-            hasMorePhotos={this.state.hasMorePhotos}
-            owner={this.props.owner}
-        />
+      <AlbumDetails
+        loadingPhotos={this.state.loading}
+        album={this.state.album}
+        loadMorePhotos={this.loadMorePhotos.bind(this)}
+        hasMorePhotos={this.state.hasMorePhotos}
+        owner={this.props.owner}
+      />
     );
-}
+  }
 }
 
 export default AlbumDetailsLoader;

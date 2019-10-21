@@ -25,12 +25,13 @@ class PhotosList extends Component {
   }
 
   photoItems() {
+    console.log("photoItems: ", this.props.photos)
     return this.props.photos.map(photo =>
       <S3Image 
         key={photo.thumbnail.key} 
         imgKey={photo.thumbnail.key.replace('public/', '')} 
         style={{ display: 'inline-block', 'paddingRight': '5px' }}
-        onClick={this.handlePhotoClick.bind(this, photo.fullsize)}
+        onClick={this.handlePhotoClick.bind(this, photo)}
       />
     );
   }

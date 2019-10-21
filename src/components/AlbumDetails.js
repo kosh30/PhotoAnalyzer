@@ -6,7 +6,6 @@ import PhotosList from './PhotosList';
 class AlbumDetails extends Component {
   render() {
     if (!this.props.album) return 'Loading album...';
-        
     return (
         <Segment>
         <Header as='h3'>{this.props.album.name}</Header>

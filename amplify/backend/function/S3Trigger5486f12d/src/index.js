@@ -27,6 +27,22 @@ async function getLabelNames(bucketName, key) {
   return labelNames;
 }
 
+async function getTextRec(bucketName, key) {
+  let params = {
+    Image: {
+      S3Object: {
+        Bucket: bucketName,
+        Name: key
+      }
+    },
+  };
+  console.log('INSIDE getTextRec');
+  const detectionResult = await Rekognition.detectText(params).promise();
+  const recWords = detectionResult.TextDetections.filter( item => item.Type === 'LINE' && item.Confidence > 70).map(item => item.DetectedText)
+  //console.log(detectionResult);
+  return recWords;
+}
+
 function storePhotoInfo(item) {
 	const params = {
 		Item: item,
@@ -47,13 +63,6 @@ function thumbnailKey(filename) {
 function fullsizeKey(filename) {
 	return `public/${filename}`;
 }
-
-// function makeThumbnail(photo) {
-//   return gm(photo).resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT).toBuffer((err, buffer) => {
-//     if (err) console.log(err);
-//     else return buffer;
-//   });
-// }
 
 async function resize(bucketName, key) {
   const originalPhoto = (await S3.getObject({ Bucket: bucketName, Key: key }).promise()).Body;
@@ -127,18 +136,26 @@ async function processRecord(record) {
 	const sizes = await resize(bucketName, key);    
   if (!sizes) throw Error;
   const labelNames = await getLabelNames(bucketName, sizes.fullsize.key);
+  const recWords = await getTextRec(bucketName, sizes.fullsize.key);
+  console.log('recWords: ', recWords);
+
   const id = uuidv4();
 	const item = {
 		id: id,
     owner: metadata.owner,
     labels: labelNames,
+    words: recWords,
 		photoAlbumId: metadata.albumid,
 		bucket: bucketName,
 		thumbnail: sizes.thumbnail,
 		fullsize: sizes.fullsize,
 		createdAt: new Date().getTime()
 	}
-	await storePhotoInfo(item);
+  try {
+    await storePhotoInfo(item);
+  } catch (err) {
+    console.err(err);
+  }
 }
 
 exports.handler = async (event, context, callback) => {

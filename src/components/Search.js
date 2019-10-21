@@ -3,8 +3,8 @@ import { Header, Input, Segment } from 'semantic-ui-react';
 import { API, graphqlOperation } from 'aws-amplify';
 import PhotosList from './PhotosList';
 
-const SearchPhotos = `query SearchPhotos($label: String!) {
-  searchPhotos(filter: { labels: { match: $label }}) {
+const ListPhotos = `query listPhotos($label: String!) {
+  listPhotos(filter: { labels: { contains: $label }}) {
     items {
       id
       bucket
@@ -18,9 +18,11 @@ const SearchPhotos = `query SearchPhotos($label: String!) {
           width
           height
       }
+      labels
     }
   }
 }`;
+
 
 class Search extends Component {
   constructor(props) {
@@ -40,14 +42,14 @@ class Search extends Component {
 
   getPhotosForLabel = async (e) => {
     console.log('Enter getPhotosForLabel:label=',this.state.label)
-    const result = await API.graphql(graphqlOperation(SearchPhotos, { label: this.state.label }));
+    const result = await API.graphql(graphqlOperation(ListPhotos, { label: this.state.label }));
 console.log("result=", result)
     let photos = [];
     let label = '';
     let hasResults = false;
-    if (result.data.searchPhotos.items.length !== 0) {
+    if (result.data.listPhotos.items.length !== 0) {
       hasResults = true;
-      photos = result.data.searchPhotos.items;
+      photos = result.data.listPhotos.items;
       label = this.state.label;
     }
     const searchResults = { label, photos }

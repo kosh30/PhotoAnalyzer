@@ -69,7 +69,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "picinfo-master-20191017144455-deployment",
-					"S3Key": "amplify-builds/S3Trigger5486f12d-74502b6d46755354622b-build.zip"
+					"S3Key": "amplify-builds/S3Trigger5486f12d-464d39554a6149763454-build.zip"
 				}
 			}
 		},
@@ -183,13 +183,13 @@
 				}
 			}
 		},
-		"RekognitionDetectLabels": {
+		"RekognitionDetect": {
 			"DependsOn": [
 				"LambdaExecutionRole"
 			],
 			"Type": "AWS::IAM::Policy",
 			"Properties": {
-				"PolicyName": "RekognitionDetectLabels",
+				"PolicyName": "RekognitionDetect",
 				"Roles": [
 					{
 						"Ref": "LambdaExecutionRole"
@@ -201,7 +201,8 @@
 						{
 							"Effect": "Allow",
 							"Action": [
-								"rekognition:detectLabels"
+								"rekognition:detectLabels",
+								"rekognition:DetectText"
 							],
 							"Resource": "*"
 						}
