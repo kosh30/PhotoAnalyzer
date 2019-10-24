@@ -10,7 +10,7 @@ class AlbumDetails extends Component {
         <Segment>
         <Header as='h3'>{this.props.album.name}</Header>
         <S3ImageUpload albumId={this.props.album.id} owner={this.props.owner}/>        
-        <PhotosList photos={this.props.album.photos.items} />
+        <PhotosList photos={this.props.album.photos.items} onDeletePhoto={this.props.onDeletePhoto}/>
         {
             this.props.hasMorePhotos && 
             <Form.Button

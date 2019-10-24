@@ -8,6 +8,7 @@ import NewAlbum from './components/NewAlbum';
 import AlbumDetailsLoader from './components/AlbumDetailsLoader';
 import AlbumsListLoader from './components/AlbumsListLoader';
 import Search from './components/Search';
+import PhotoInfo from './components/PhotoInfo';
 
 Amplify.configure(aws_exports);
 
@@ -36,6 +37,19 @@ class App extends Component {
                 owner={this.props.authData.username}
               />}
             />
+
+            <Route
+              path="/photos/:photoId"
+              render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
+            />
+            <Route
+              path="/photos/:photoId"
+              render={props => <PhotoInfo
+                id={props.match.params.photoId}
+                owner={this.props.authData.username}
+              />}
+            />
+
           </Grid.Column>
         </Grid>
       </Router>

@@ -14,6 +14,7 @@ type Photo @model @auth(rules: [{allow: owner}]){
     thumbnail: PhotoS3Info!
     labels: [String!]
     words: [String!]
+    faces: [String!]
 }
 
 type PhotoS3Info {

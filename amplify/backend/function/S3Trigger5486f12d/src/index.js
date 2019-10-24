@@ -27,7 +27,7 @@ async function getLabelNames(bucketName, key) {
   return labelNames;
 }
 
-async function getTextRec(bucketName, key) {
+async function getTexts(bucketName, key) {
   let params = {
     Image: {
       S3Object: {
@@ -36,11 +36,30 @@ async function getTextRec(bucketName, key) {
       }
     },
   };
-  console.log('INSIDE getTextRec');
+
   const detectionResult = await Rekognition.detectText(params).promise();
   const recWords = detectionResult.TextDetections.filter( item => item.Type === 'LINE' && item.Confidence > 70).map(item => item.DetectedText)
   //console.log(detectionResult);
+  console.log('recWords: ', recWords);
   return recWords;
+}
+
+async function getFaces(bucketName, key) {
+  let params = {
+    Image: {
+      S3Object: {
+        Bucket: bucketName,
+        Name: key
+      }
+    },
+    Attributes: ['ALL']
+  };
+
+  const detectionResult = await Rekognition.detectFaces(params).promise();
+  const recFaces = detectionResult.FaceDetails.map(item => { delete item.Landmarks; delete item.Pose; delete item.Quality; delete item.MouthOpen; delete item.EyesOpen; return item; });
+  //console.log(detectionResult);
+  console.log('recFaces: ', recFaces);
+  return recFaces;
 }
 
 function storePhotoInfo(item) {
@@ -136,8 +155,8 @@ async function processRecord(record) {
 	const sizes = await resize(bucketName, key);    
   if (!sizes) throw Error;
   const labelNames = await getLabelNames(bucketName, sizes.fullsize.key);
-  const recWords = await getTextRec(bucketName, sizes.fullsize.key);
-  console.log('recWords: ', recWords);
+  const recWords = await getTexts(bucketName, sizes.fullsize.key);
+  const recFaces = (await getFaces(bucketName, sizes.fullsize.key)).map(item=>JSON.stringify(item));
 
   const id = uuidv4();
 	const item = {
@@ -145,6 +164,7 @@ async function processRecord(record) {
     owner: metadata.owner,
     labels: labelNames,
     words: recWords,
+    faces: recFaces,
 		photoAlbumId: metadata.albumid,
 		bucket: bucketName,
 		thumbnail: sizes.thumbnail,

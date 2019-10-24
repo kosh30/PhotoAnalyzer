@@ -19,6 +19,8 @@ const ListPhotos = `query listPhotos($label: String!) {
           height
       }
       labels
+      words
+      faces
     }
   }
 }`;
