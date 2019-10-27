@@ -35,7 +35,8 @@ class S3ImageUpload extends Component {
     }
     await Promise.all(files.map(f => this.uploadFile(f)));
 
-    this.setState({uploading: false});
+    this.setState({ uploading: false });
+    this.props.needReloadPhotos();
   }
 
   render() {

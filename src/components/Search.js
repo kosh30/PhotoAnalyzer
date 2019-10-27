@@ -67,6 +67,7 @@ console.log("result=", result)
   render() {
     return (
       <Segment>
+        <Header as='h3'>Tag Search</Header>
         <Input
           type='text'
           placeholder='Search for photos'

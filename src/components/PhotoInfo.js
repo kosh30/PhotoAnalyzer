@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Segment, Grid, List, Label, Button, Header, Divider } from 'semantic-ui-react';
 import { S3Image } from 'aws-amplify-react';
 import { API, graphqlOperation } from 'aws-amplify';
-import { ENGINE_METHOD_NONE } from 'constants';
 
 const GetPhoto = `query GetPhoto($id: ID!) {
   getPhoto(id: $id) {

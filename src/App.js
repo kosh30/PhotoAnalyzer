@@ -9,6 +9,7 @@ import AlbumDetailsLoader from './components/AlbumDetailsLoader';
 import AlbumsListLoader from './components/AlbumsListLoader';
 import Search from './components/Search';
 import PhotoInfo from './components/PhotoInfo';
+import Navbar from './components/Navbar';
 
 Amplify.configure(aws_exports);
 
@@ -17,19 +18,23 @@ class App extends Component {
     console.log('App: ', this.props);
 
     return (
-      <Router>
+      <>
+        <Router>
+        <Navbar />
+
         <Grid padded>
-          <Grid.Column>
+            <Grid.Column>
+
             <Route path="/" exact component={NewAlbum} />
             <Route path="/" exact
               render={() => <AlbumsListLoader owner={this.props.authState==='signedIn'?this.props.authData.username:null} /> }
             />
             <Route path="/" exact component={Search}/>
 
-            <Route
+            {/* <Route
               path="/albums/:albumId"
               render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
-            />
+            /> */}
             <Route
               path="/albums/:albumId"
               render={props => <AlbumDetailsLoader
@@ -38,10 +43,10 @@ class App extends Component {
               />}
             />
 
-            <Route
+            {/* <Route
               path="/photos/:photoId"
               render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
-            />
+            /> */}
             <Route
               path="/photos/:photoId"
               render={props => <PhotoInfo
@@ -52,7 +57,8 @@ class App extends Component {
 
           </Grid.Column>
         </Grid>
-      </Router>
+        </Router>
+        </>
     );
   };
 }

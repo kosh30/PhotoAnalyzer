@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { Header, List, Segment } from 'semantic-ui-react';
-import {NavLink} from 'react-router-dom';
+import { Header, List, Segment, Icon, Label } from 'semantic-ui-react';
+import { NavLink } from 'react-router-dom';
 import { makeComparator } from '../util';
 
 class AlbumsList extends Component {
