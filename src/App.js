@@ -29,12 +29,7 @@ class App extends Component {
             <Route path="/" exact
               render={() => <AlbumsListLoader owner={this.props.authState==='signedIn'?this.props.authData.username:null} /> }
             />
-            <Route path="/" exact component={Search}/>
 
-            {/* <Route
-              path="/albums/:albumId"
-              render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
-            /> */}
             <Route
               path="/albums/:albumId"
               render={props => <AlbumDetailsLoader
@@ -43,11 +38,14 @@ class App extends Component {
               />}
             />
 
-            {/* <Route
-              path="/photos/:photoId"
-              render={() => <div><NavLink to='/'>Back to Albums list</NavLink></div>}
-            /> */}
             <Route
+              path="/search"
+              render={props => <Search
+                owner={this.props.authData.username}
+              />}
+            />
+
+              <Route
               path="/photos/:photoId"
               render={props => <PhotoInfo
                 id={props.match.params.photoId}

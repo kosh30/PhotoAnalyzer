@@ -2,10 +2,12 @@ import React, { Component } from 'react';
 import { Segment, Grid, List, Label, Button, Header, Divider } from 'semantic-ui-react';
 import { S3Image } from 'aws-amplify-react';
 import { API, graphqlOperation } from 'aws-amplify';
+import { formatDate } from '../util';
 
 const GetPhoto = `query GetPhoto($id: ID!) {
   getPhoto(id: $id) {
     id
+    createdAt
     thumbnail {
       width
       height
@@ -76,19 +78,19 @@ class PhotoInfo extends Component {
       <>
         {/* <Button.Group as='div' color='teal' size='medium'> */}
         {/* <Label.Group color='teal' size='medium'> */}
-        {data.Beard.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Beard</Label><Label pointing='left' color='grey' size='tiny'>{data.Beard.Confidence.toFixed() + '%'}</Label></Button>)}
+        {data.Beard.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Beard</Label><Label pointing='left' color='grey' size='mini'>{data.Beard.Confidence.toFixed() + '%'}</Label></Button>)}
 
-        {data.Mustache.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Mustache</Label><Label pointing='left' color='grey' size='tiny'>{data.Mustache.Confidence.toFixed() + '%'}</Label></Button>)}
+        {data.Mustache.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Mustache</Label><Label pointing='left' color='grey' size='mini'>{data.Mustache.Confidence.toFixed() + '%'}</Label></Button>)}
 
-        {data.Sunglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Sunglasses</Label><Label pointing='left' color='grey' size='tiny'>{data.Sunglasses.Confidence.toFixed() + '%'}</Label></Button>)}
+        {data.Sunglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Sunglasses</Label><Label pointing='left' color='grey' size='mini'>{data.Sunglasses.Confidence.toFixed() + '%'}</Label></Button>)}
 
-        {data.Eyeglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Eyeglasses</Label><Label pointing='left' color='grey' size='tiny'>{data.Eyeglasses.Confidence.toFixed() + '%'}</Label></Button>)}
+        {data.Eyeglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Eyeglasses</Label><Label pointing='left' color='grey' size='mini'>{data.Eyeglasses.Confidence.toFixed() + '%'}</Label></Button>)}
 
-        {data.Smile.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Smile</Label><Label pointing='left' color='grey' size='tiny'>{data.Smile.Confidence.toFixed() + '%'}</Label></Button>)}
+        {data.Smile.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Smile</Label><Label pointing='left' color='grey' size='mini'>{data.Smile.Confidence.toFixed() + '%'}</Label></Button>)}
 
-        <Button labelPosition='right'><Label color='teal' size='medium'>{data.Gender.Value}</Label><Label pointing='left' color='grey' size='tiny'>Confidance: {data.Gender.Confidence.toFixed() + '%'}</Label></Button>
+        <Button labelPosition='right'><Label color='teal' size='medium'>{data.Gender.Value}</Label><Label pointing='left' color='grey' size='mini'>{data.Gender.Confidence.toFixed() + '%'}</Label></Button>
 
-        <Button labelPosition='right'><Label color='teal' size='medium'>Age</Label><Label pointing='left' color='grey' size='tiny'>{data.AgeRange.Low} ~ {data.AgeRange.High}</Label></Button>
+        <Button labelPosition='right'><Label color='teal' size='medium'>Age</Label><Label pointing='left' color='grey' size='mini'>{data.AgeRange.Low} ~ {data.AgeRange.High}</Label></Button>
 
         {this.dispEmotions(data.Emotions)}
 
@@ -101,7 +103,7 @@ class PhotoInfo extends Component {
   displayMultiFaces(faceData) {
     return faceData.map((item, i) =>
       (<Segment key={i}>
-        <div>Face #{i + 1}</div>
+        <div>Face #{i + 1} {i===0 && '(with confidenve level)'}</div>
         {this.displayOneFace(JSON.parse(item))}
       </Segment>
       )
@@ -121,11 +123,16 @@ class PhotoInfo extends Component {
         <Grid.Column>
           <S3Image
             imgKey={this.state.photoData.fullsize.key.replace('public/', '')}
-            style={{ display: 'inline-block', 'paddingRight': '5px' }}
+            theme={{ photoImg: { width: '100%' } }}
           />
         </Grid.Column>
         <Grid.Column>
           <Segment>
+            <Segment>
+              Photo size: {this.state.photoData.fullsize.width}x{this.state.photoData.fullsize.height} | 
+              Uploaded at: {formatDate(this.state.photoData.createdAt)}
+            </Segment>
+
             <Segment inverted><Header as='h3' inverted color='olive'>Object and Scene Recognition:</Header></Segment>
             {this.displayArray(this.state.photoData.labels)}
 

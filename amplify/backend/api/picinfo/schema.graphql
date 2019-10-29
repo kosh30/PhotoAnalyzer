@@ -3,7 +3,7 @@
 type Album @model @auth(rules: [{allow: owner}]) {
     id: ID!
     name: String!
-    photos: [Photo] @connection(name: "AlbumPhotos")
+    photos: [Photo] @connection(name: "AlbumPhotos", sortField: "createdAt")
 }
 
 type Photo @model @auth(rules: [{allow: owner}]){
@@ -15,6 +15,8 @@ type Photo @model @auth(rules: [{allow: owner}]){
     labels: [String!]
     words: [String!]
     faces: [String!]
+    owner: String
+    createdAt:String
 }
 
 type PhotoS3Info {

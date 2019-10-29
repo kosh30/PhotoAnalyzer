@@ -12,6 +12,7 @@ const GetAlbum = `query GetAlbum($id: ID!, $nextTokenForPhotos: String) {
     nextToken
     items {
       id
+      createdAt
       thumbnail {
         width
         height
@@ -42,12 +43,17 @@ class AlbumDetailsLoader extends Component {
   async loadMorePhotos() {
     console.log('inside loadMorePhotos')
     if (!this.state.hasMorePhotos) return;
+    //var data = null;
 
     this.setState({ loading: true });
-    const { data } = await API.graphql(graphqlOperation(GetAlbum, { id: this.props.id, nextTokenForPhotos: this.state.nextTokenForPhotos }));
+    try {
+      var { data } = await API.graphql(graphqlOperation(GetAlbum, { id: this.props.id, nextTokenForPhotos: this.state.nextTokenForPhotos }));
+    } catch (err) {
+      console.error('Error loading album photos: ',err);  
+    }
 
     let album;
-    if (this.state.album === null) {
+    if (!this.state.album) {
       album = data.getAlbum;
     } else {
       album = this.state.album;
@@ -92,7 +98,7 @@ class AlbumDetailsLoader extends Component {
       // console.log('credentials: ', credentials)
       // console.log('essential credentials: ', Auth.essentialCredentials(credentials))
       const s3 = new AWS.S3({ credentials: Auth.essentialCredentials(credentials) });
-      
+
       console.log('before S3delete data=', data)
       let deleted = data.deletePhoto;
       let params1 = { Bucket: deleted.bucket, Key: deleted.thumbnail.key };
@@ -106,12 +112,12 @@ class AlbumDetailsLoader extends Component {
       // });
       s3.deleteObject(params1, function (err, data) {
         if (err) console.log('Error deleting thumbnail from S3', err, err.stack);
-        else console.log('thumbnail deleted from S3: ',data);
+        else console.log('thumbnail deleted from S3: ', data);
       });
       let params2 = { Bucket: deleted.bucket, Key: deleted.fullsize.key };
       s3.deleteObject(params2, function (err, data) {
         if (err) console.log('Error deleting fullsize from S3', err, err.stack);
-        else console.log('fullsize deleted from S3: ',data);
+        else console.log('fullsize deleted from S3: ', data);
       });
 
     } catch (e) {
@@ -147,8 +153,8 @@ class AlbumDetailsLoader extends Component {
           <Icon name='circle notched' loading />
           <Message.Content>
             <Message.Header>Please wait</Message.Header>
-            Your phote is being analyzed ...
-  </Message.Content>
+            Your photo is being analyzed ...
+          </Message.Content>
         </Message>)
       }
 
@@ -161,8 +167,8 @@ class AlbumDetailsLoader extends Component {
         onDeletePhoto={this.onDeletePhoto}
         needReloadPhotos={this.needReloadPhotos}
       />
-</>
-      );
+    </>
+    );
   }
 }
 

@@ -43,7 +43,8 @@ class Search extends Component {
   }
 
   getPhotosForLabel = async (e) => {
-    console.log('Enter getPhotosForLabel:label=',this.state.label)
+    console.log('Enter getPhotosForLabel:label=', this.state.label)
+    e.preventDefault();
     const result = await API.graphql(graphqlOperation(ListPhotos, { label: this.state.label }));
 console.log("result=", result)
     let photos = [];
@@ -64,6 +65,20 @@ console.log("result=", result)
       : <Header as='h4' color='grey'>No photos found matching '{this.state.label}'</Header>
   }
 
+  componentDidMount() {
+    const input = document.getElementById("label");
+
+    input.addEventListener("keyup", (event)=> {
+      // Number 13 is the "Enter" key on the keyboard
+      if (event.keyCode === 13) {
+        // Cancel the default action, if needed
+        event.preventDefault();
+        // Trigger the button element with a click
+        this.getPhotosForLabel(event);
+      }
+    });
+  }
+
   render() {
     return (
       <Segment>
@@ -75,6 +90,7 @@ console.log("result=", result)
           iconPosition='left'
           action={{ content: 'Search', onClick: this.getPhotosForLabel }}
           name='label'
+          id='label'
           value={this.state.label}
           onChange={this.updateLabel}
         />

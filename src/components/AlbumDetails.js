@@ -26,7 +26,7 @@ class AlbumDetails extends Component {
       const result = await API.graphql(graphqlOperation(DeleteAlbum, { id: album.id }));
       console.info(`Deleted album with id ${result.data.deleteAlbum.id}`);
     } catch (err) {
-      console.err('Error deleting album: ',err)
+      console.error('Error deleting album: ',err)
     }
     this.setState({ albumChanged: true });
   }

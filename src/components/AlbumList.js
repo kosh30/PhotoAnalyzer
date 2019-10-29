@@ -16,7 +16,8 @@ class AlbumsList extends Component {
     return (
       <Segment>
         <Header as='h3'>My Albums</Header>
-        <List divided relaxed>
+        {/* <List divided relaxed> */}
+        <List bulleted>
           {this.albumItems()}
         </List>
       </Segment>

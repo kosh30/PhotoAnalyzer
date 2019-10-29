@@ -160,21 +160,21 @@ async function processRecord(record) {
 
   const id = uuidv4();
 	const item = {
-		id: id,
-    owner: metadata.owner,
+    id: id,
+    photoAlbumId: metadata.albumid,
+		bucket: bucketName,
+		fullsize: sizes.fullsize,
+		thumbnail: sizes.thumbnail,
     labels: labelNames,
     words: recWords,
     faces: recFaces,
-		photoAlbumId: metadata.albumid,
-		bucket: bucketName,
-		thumbnail: sizes.thumbnail,
-		fullsize: sizes.fullsize,
-		createdAt: new Date().getTime()
+    owner: metadata.owner,
+		createdAt: new Date().getTime().toString()
 	}
   try {
     await storePhotoInfo(item);
   } catch (err) {
-    console.err(err);
+    console.error(err);
   }
 }
 

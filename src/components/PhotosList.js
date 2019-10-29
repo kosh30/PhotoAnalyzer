@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Divider, Segment, Label, Icon } from 'semantic-ui-react';
+import { Divider, Segment, Label, Icon, Card } from 'semantic-ui-react';
 import { S3Image } from 'aws-amplify-react';
-// import Lightbox from './Lightbox';
+import { formatDate } from '../util';
 
 class PhotosList extends Component {
   constructor(props) {
@@ -31,33 +31,38 @@ class PhotosList extends Component {
   }
 
   photoItems() {
-    console.log("photoItems: ", this.props.photos)
+    console.log("photoItems(): ", this.props.photos)
     return this.props.photos.map(photo => {
       return (
-        <Segment key={photo.thumbnail.key}
-          style={{ display: 'inline-block', 'paddingRight': '10px' }}
-        >
-          <NavLink to={`/photos/${photo.id}`}>
-            <S3Image
-              imgKey={photo.thumbnail.key.replace('public/', '')}
-            // onClick={this.handlePhotoClick.bind(this, photo)}
-            />
-          </NavLink>
-          <Label size='tiny' floating>
-              <Icon name='delete' onClick={()=>this.handleDelete(photo)}/>
-          </Label>
-        </Segment>
+        <Card key={photo.thumbnail.key} raised>
+          <Card.Content>
+
+            <NavLink to={`/photos/${photo.id}`}>
+              <S3Image
+                imgKey={photo.thumbnail.key.replace('public/', '')}
+              />
+            </NavLink>
+            <Label size='tiny' floating>
+              <Icon name='delete' onClick={() => this.handleDelete(photo)} />
+            </Label>
+            <Card.Description style={{fontSize:'0.6em'}}>
+              Uploaded at: 
+              {formatDate(photo.createdAt)}
+            </Card.Description>
+          </Card.Content>
+        </Card>
       )
     });
   }
 
   render() {
     return (
-      <div>
+      <>
         <Divider hidden />
-        {this.photoItems()}
-        {/* <Lightbox photo={this.state.selectedPhoto} onClose={this.handleLightboxClose} /> */}
-      </div>
+        <Card.Group stackable itemsPerRow='10'>
+          {this.photoItems()}
+        </Card.Group>
+      </>
     );
   }
 }
