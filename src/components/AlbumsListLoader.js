@@ -2,15 +2,13 @@ import React, { Component } from 'react';
 import { Connect } from 'aws-amplify-react';
 import { graphqlOperation } from 'aws-amplify';
 import AlbumsList from './AlbumList';
+import { Message } from 'semantic-ui-react';
 
 class AlbumsListLoader extends Component {
   onNewAlbum = (prevQuery, newData) => {
-    // When we get data about a new album, we need to put in into an object 
-    // with the same shape as the original query results, but with the new data added as well
-    console.log('Inside onNewAlbum')
+    //console.log('Inside onNewAlbum')
     let updatedQuery = Object.assign({}, prevQuery);
     updatedQuery.listAlbums.items = prevQuery.listAlbums.items.concat([newData.onCreateAlbum]);
-    //console.log(JSON.stringify(updatedQuery))
     return updatedQuery;
   }
 
@@ -41,9 +39,18 @@ class AlbumsListLoader extends Component {
         onSubscriptionMsg={this.onNewAlbum}
       >
         {({ data, loading, err }) => {
-          if (loading) { return <div>Loading...</div>; }
-          if (err) console.log(err);
-          if (!data.listAlbums) return;
+          if (loading)
+            return <div>Loading...</div>;
+          if (err) {
+            console.log(err);
+            return (<Message
+              header='Sorry'
+              content={err.errors[0].message}
+              onDismiss={() => this.setState({ errorMsg: '' })}
+            />)
+          }
+          if (data.listAlbums.items.length < 1)
+            return <div>Please start by creating an album.</div>;
 
           return <AlbumsList albums={data.listAlbums.items} />;
         }}

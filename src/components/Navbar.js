@@ -1,10 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button, Label, Segment, Icon, Popup } from 'semantic-ui-react';
 
 const Navbar = () =>
   (
-    <Segment style={{ textAlign: 'justified', padding: '0px', borderTop: '1px solid var(--amazonOrange)', borderBottom: '1px solid var(--amazonOrange)' }}>
+    <Segment style={{ textAlign: 'justified', padding: '0px', borderTop: '1px solid #00b5ad', borderBottom: '1px solid #00b5ad' }}>
 
       <Popup
         trigger={
@@ -18,28 +18,34 @@ const Navbar = () =>
             </Label>
           </Button>}
         content={<ul>
-          <li>Tag your photos with the power of AI!</li>
-          <li>Tags are searchable!</li>
+          <li>Your photos are tagged upon uploading with the power of AI!</li>
+          <li>Click on a photo to see what AI can detect!</li>
+          <li>Click "Search Tags" to find the photos with matching tags.</li>
         </ul>}
         position='bottom right'
       />
       <div style={{ display: 'inline', float: 'right' }}>
+      <NavLink to='/' >
         <Button as='div' labelPosition='right'>
-          <Button color='teal' basic>
-            <NavLink to='/' >Manage Albums</NavLink>
+          <Button color='teal' inverted animated='fade'>
+            <span style={{color:'teal',paddingRight:'10px'}}>Manage Albums</span>
           </Button>
-          <Label pointing='left' color='teal'>
+          <Label pointing='left' color='teal' >
             <span><Icon name='address book outline' /></span>
-          </Label>
+            </Label>
         </Button>
+        </NavLink>
+
+        <NavLink to='/search' >
         <Button as='div' labelPosition='right'>
-          <Button color='teal' basic>
-            <NavLink to='/search' >Search Tags</NavLink>
+          <Button color='teal' inverted animated='fade'>
+            <span style={{color:'teal',paddingRight:'10px'}}>Search Tags</span>
           </Button>
           <Label pointing='left' color='teal'>
             <span><Icon name='search' /></span>
           </Label>
         </Button>
+        </NavLink>
       </div>
 
     </Segment>

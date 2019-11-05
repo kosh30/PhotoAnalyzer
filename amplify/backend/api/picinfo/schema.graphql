@@ -17,6 +17,7 @@ type Photo @model @auth(rules: [{allow: owner}]){
     faces: [String!]
     owner: String
     createdAt:String
+    searchPhrases: String
 }
 
 type PhotoS3Info {

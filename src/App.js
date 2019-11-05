@@ -3,7 +3,7 @@ import { Grid } from 'semantic-ui-react';
 import Amplify from 'aws-amplify';
 import aws_exports from './aws-exports';
 import { withAuthenticator } from 'aws-amplify-react';
-import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import NewAlbum from './components/NewAlbum';
 import AlbumDetailsLoader from './components/AlbumDetailsLoader';
 import AlbumsListLoader from './components/AlbumsListLoader';

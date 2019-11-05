@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Segment, Grid, List, Label, Button, Header, Divider } from 'semantic-ui-react';
+import { Segment, Grid, List, Header, Message } from 'semantic-ui-react';
 import { S3Image } from 'aws-amplify-react';
 import { API, graphqlOperation } from 'aws-amplify';
 import { formatDate } from '../util';
@@ -21,6 +21,7 @@ const GetPhoto = `query GetPhoto($id: ID!) {
     labels
     words
     faces
+    searchPhrases
   }
 }
 `;
@@ -33,94 +34,127 @@ class PhotoInfo extends Component {
       photoData: null,
       isLoading: true,
       facesShown: false,
-      hasFaces: false
+      hasFaces: false,
+      wordsShown: false,
+      hasWords: false,
+      errorMsg: ''
     }
 
     this.img = null;
-    this.canvas = null;
+    this.canvasData = [];
   }
 
   loadPhoto = async () => {
     try {
-      const { data } = await API.graphql(graphqlOperation(GetPhoto, { id: this.props.id }));
-      console.log('API return: ', data);
-      const hasFaces = (data.getPhoto.faces && data.getPhoto.faces.length > 0);
-      this.setState({ photoData: data.getPhoto, isLoading: false, hasFaces });
-      this.draw();
+      let { data } = await API.graphql(graphqlOperation(GetPhoto, { id: this.props.id }));
+      let photoData = data.getPhoto;
+      //console.log('API return: ', photoData);
+      const hasFaces = (photoData.faces && photoData.faces.length > 0);
+      const hasWords = (photoData.words && photoData.words.length > 0);
+      hasFaces && (photoData.faces = photoData.faces.map(item => JSON.parse(item)));
+      hasWords && (photoData.words = photoData.words.map(item => JSON.parse(item)));
+      photoData.labels = photoData.labels.map(item => JSON.parse(item));
+      console.log('API after JSON: ', photoData);
+
+      this.setState({ photoData, isLoading: false, hasFaces, hasWords });
     } catch (err) {
       console.error(err);
-      return;
+      this.setState({ errorMsg: err.errors[0].message });
     }
   }
 
-  draw = () => {
-    if (this.canvas) this.clearCanvas();
-    else {
+  draw = (cnum) => {
+    if (!this.canvasData[0]) {
       this.img = document.getElementById('pic');
-      this.canvas = document.getElementById('canvas');
-    
-      this.canvas.width = this.img.offsetWidth;
-      this.canvas.height = this.img.offsetWidth * (this.state.photoData.fullsize.height / this.state.photoData.fullsize.width);
-      this.canvas.style.position = "absolute";
-      this.canvas.style.left = this.img.offsetLeft + "px";
-      this.canvas.style.top = this.img.offsetTop + "px";
-    }
-    //console.log('canvas:',this.canvas);
+      this.canvasData[0] = {
+        canvas: document.getElementById('canvas0'),
+        context: document.getElementById('canvas0').getContext('2d')
+      };
+      this.canvasData[1] = {
+        canvas: document.getElementById('canvas1'),
+        context: document.getElementById('canvas1').getContext('2d')
+      };
 
-    var ctx = this.canvas.getContext("2d");
-    //     ctx.lineWidth = 3;
+      this.canvasData.forEach(item => {
+        item.canvas.width = this.img.offsetWidth;
+        item.canvas.height = this.img.offsetWidth * (this.state.photoData.fullsize.height / this.state.photoData.fullsize.width);
+        item.canvas.style.position = "absolute";
+        item.canvas.style.left = this.img.offsetLeft + "px";
+        item.canvas.style.top = this.img.offsetTop + "px";
+      })
+    }
+
+    //if ((cnum===0 && this.facesShown) || (cnum===1 && this.wordsShown)) this.clearCanvas(cnum);
+
+    // ctx.lineWidth = 3;
     // ctx.strokeStyle = '#00ff00';
     // ctx.beginPath();
     // ctx.arc(250, 210, 200, 0, 2 * Math.PI, false);
     // ctx.stroke();
-    const { faces } = this.state.photoData;
-    faces.forEach(face => {
-      const pbox = JSON.parse(face).BoundingBox;
-      //console.log('pbox: ', pbox)
-      const Left = pbox.Left * this.img.offsetWidth;
-      const Top = pbox.Top * this.canvas.offsetHeight;
-      const Width = pbox.Width * this.img.offsetWidth;
-      const Height = pbox.Height * this.canvas.offsetHeight;
-      const box = { Left, Top, Width, Height };
-      //console.log('box: ', box)
+    let info = null;
+    if (cnum === 0) {
+      info = this.state.photoData.faces;
+      this.setState({ facesShown: true });
+    } else if (cnum === 1) {
+      info = this.state.photoData.words;
+      this.setState({ wordsShown: true })
+    }
 
-      // const Left = 0;
-      // const Top = 0;
-      // const Width = 200;
-      // const Height = 10;
-      // const box = { Left, Top, Width, Height };
+    info.forEach(item => {
+      console.log('info item: ', item)
+      let box = [];
+      if (cnum === 1) box = item.Geometry.Polygon;
+      else if (cnum === 0) {
+        box = [
+          { X: item.BoundingBox.Left, Y: item.BoundingBox.Top },
+          { X: item.BoundingBox.Left + item.BoundingBox.Width, Y: item.BoundingBox.Top },
+          { X: item.BoundingBox.Left + item.BoundingBox.Width, Y: item.BoundingBox.Top + item.BoundingBox.Height },
+          { X: item.BoundingBox.Left, Y: item.BoundingBox.Top + item.BoundingBox.Height }
+        ];
+      }
 
-      // ctx.moveTo(box.Left, box.Top);
-      // ctx.lineTo(box.Left + box.Width, box.Top);
-      // ctx.lineTo(box.Left + box.Width, box.Top + box.Height);
-      // ctx.lineTo(box.Left, box.Top + box.Height);
-      // ctx.lineTo(box.Left, box.Top);
-      ctx.fillStyle = "rgba(0, 181, 173, 0.4)";
-ctx.fillRect(box.Left, box.Top, box.Width, box.Height);
+      box = box.map(item => {
+        return { X: item.X * this.img.offsetWidth, Y: item.Y * this.canvasData[0].canvas.offsetHeight }
+      })
 
+      this.canvasData[cnum].context.moveTo(box[0].X, box[0].Y);
+      this.canvasData[cnum].context.lineTo(box[1].X, box[1].Y);
+      this.canvasData[cnum].context.lineTo(box[2].X, box[2].Y);
+      this.canvasData[cnum].context.lineTo(box[3].X, box[3].Y);
+      this.canvasData[cnum].context.lineTo(box[0].X, box[0].Y);
+
+      // ctx.fillStyle = "rgba(0, 181, 173, 0.4)";
+      // ctx.fillRect(box.Left, box.Top, box.Width, box.Height);
     });
-    ctx.stroke();
-    this.setState({ facesShown: true })
+    console.log('befroe strokeStyle: ', this.canvasData[0].context.strokeStyle)
+    this.canvasData[0].context.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+    this.canvasData[0].context.lineWidth = 3;
+    this.canvasData[1].context.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+    this.canvasData[1].context.lineWidth = 3;
+    console.log('after strokeStyle: ', this.canvasData[0].context.strokeStyle)
+
+    this.canvasData[cnum].context.stroke();
   }
 
-  clearCanvas = () => {
-    var context = this.canvas.getContext("2d");
-    context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.setState({ facesShown: false })
+  clearCanvas = (cnum) => {
+    if (this.canvasData.length <= 0 || !this.canvasData[cnum]) return;
+    this.canvasData[cnum].context.clearRect(0, 0, this.canvasData[cnum].canvas.width, this.canvasData[cnum].canvas.height);
+    cnum === 0 && this.setState({ facesShown: false });
+    cnum === 1 && this.setState({ wordsShown: false });
   }
 
   displayArray = (data) => {
     if (data.length <= 0) return (<>None</>);
-
+    //console.log(data)
     return (
       <>
-        <List as='ol'>
+        <List bulleted animated>
           {
             data.map(
               (item, i) => {
                 return (
-                  <List.Item as='li' value='*' key={i}>
-                    {item}
+                  <List.Item key={i}>
+                    {item[0]} ({item[1]})
                   </List.Item>
                 )
               })
@@ -131,35 +165,31 @@ ctx.fillRect(box.Left, box.Top, box.Width, box.Height);
   }
 
   dispEmotions = (emotions) => {
-    return emotions.filter(item => item.Confidence > 20).map((item, i) => (
-      <Button labelPosition='right' key={i}><Label color='pink' size='medium'>{item.Type}</Label><Label pointing='left' color='grey' size='tiny'>{item.Confidence.toFixed() + '%'}</Label></Button>)
-    );
+    return (
+      (<List.Content>
+        <List.List>
+          {emotions.filter(item => this.state.photoData.searchPhrases.indexOf(item.Type.toLowerCase()) > -1).map((item, i) => (
+            <List.Item key={i}>{item.Type} ({item.Confidence.toFixed() + '%'})</List.Item>
+          ))
+          }
+        </List.List>
+      </List.Content>)
+    )
   }
 
   displayOneFace = (data) => {
     return (
-      <>
-        {/* <Button.Group as='div' color='teal' size='medium'> */}
-        {/* <Label.Group color='teal' size='medium'> */}
-        {data.Beard.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Beard</Label><Label pointing='left' color='grey' size='mini'>{data.Beard.Confidence.toFixed() + '%'}</Label></Button>)}
-
-        {data.Mustache.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Mustache</Label><Label pointing='left' color='grey' size='mini'>{data.Mustache.Confidence.toFixed() + '%'}</Label></Button>)}
-
-        {data.Sunglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Sunglasses</Label><Label pointing='left' color='grey' size='mini'>{data.Sunglasses.Confidence.toFixed() + '%'}</Label></Button>)}
-
-        {data.Eyeglasses.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Eyeglasses</Label><Label pointing='left' color='grey' size='mini'>{data.Eyeglasses.Confidence.toFixed() + '%'}</Label></Button>)}
-
-        {data.Smile.Value && (<Button labelPosition='right'><Label color='teal' size='medium'>Smile</Label><Label pointing='left' color='grey' size='mini'>{data.Smile.Confidence.toFixed() + '%'}</Label></Button>)}
-
-        <Button labelPosition='right'><Label color='teal' size='medium'>{data.Gender.Value}</Label><Label pointing='left' color='grey' size='mini'>{data.Gender.Confidence.toFixed() + '%'}</Label></Button>
-
-        <Button labelPosition='right'><Label color='teal' size='medium'>Age</Label><Label pointing='left' color='grey' size='mini'>{data.AgeRange.Low} ~ {data.AgeRange.High}</Label></Button>
-
+      <List bulleted animated>
+        {data.Beard.Value && <List.Item >Beard ({data.Beard.Confidence.toFixed() + '%'})</List.Item>}
+        {data.Mustache.Value && <List.Item >Mustache ({data.Mustache.Confidence.toFixed() + '%'})</List.Item>}
+        {data.Sunglasses.Value && <List.Item >Sunglasses ({data.Sunglasses.Confidence.toFixed() + '%'})</List.Item>}
+        {data.Eyeglasses.Value && <List.Item >Eyeglasses ({data.Eyeglasses.Confidence.toFixed() + '%'})</List.Item>}
+        {data.Smile.Value && <List.Item >Smile ({data.Smile.Confidence.toFixed() + '%'})</List.Item>}
+        <List.Item >{data.Gender.Value} ({data.Gender.Confidence.toFixed() + '%'})</List.Item>
+        <List.Item >Age: {data.AgeRange.Low} ~ {data.AgeRange.High}</List.Item>
+        <List.Item >Emotions: </List.Item>
         {this.dispEmotions(data.Emotions)}
-
-        {/* </Label.Group> */}
-        {/* </Button.Group> */}
-      </>
+      </List>
     )
   }
 
@@ -167,32 +197,58 @@ ctx.fillRect(box.Left, box.Top, box.Width, box.Height);
     return (
       (faceData.map((item, i) =>
         (<Segment key={i}>
-          <div>Face #{i + 1} {i === 0 && '(with confidenve level)'}</div>
-          {this.displayOneFace(JSON.parse(item))}
+          <div>Face #{i + 1}</div>
+          {this.displayOneFace(item)}
         </Segment>
         )
       ))
     )
   }
 
-  displayButton = () => {
-    console.log('displayButton: ',this.state.facesShown)
+  displayButton = (cnum) => {
+    let disabled = true, content = '', shown = false;
+    switch (cnum) {
+      case 0:
+        disabled = !this.state.hasFaces;
+        content = this.state.facesShown ? 'Clear' : 'Mark on image';
+        shown = this.state.facesShown;
+        break;
+      case 1:
+        disabled = !this.state.hasWords;
+        content = this.state.wordsShown ? 'Clear' : 'Mark on image';
+        shown = this.state.wordsShown;
+        break;
+      default:
+
+    }
+
     return (
-      <Button size='mini' floated='right' onClick={this.state.facesShown ? this.clearCanvas : this.draw}
-        disabled={!this.state.hasFaces} style={{ marginLeft: '10px' }}>
-        {this.state.facesShown ? 'Clear' : 'Mark the image'}
-      </Button>
+      // <Button size='mini' floated='right' onClick={shown ?
+      //   () => this.clearCanvas(cnum) : () => this.draw(cnum)}
+      //   disabled={disabled}>
+      // {content}
+      // </Button>
+      <button className="ui basic button inverted right floated mini" onClick={shown ? () => this.clearCanvas(cnum) : () => this.draw(cnum)} disabled={disabled}>
+        {content}
+      </button>
     )
   }
 
   componentDidMount() {
-    console.log('PhotoInfo: id=', this.props.id)
+    console.log('cmpDidMount: PhotoInfo: id=', this.props.id)
     this.loadPhoto();
   }
 
   render() {
     if (this.state.isLoading) return "Loading ...";
-console.log('render() called')
+    if (this.state.errorMsg)
+      return (<Message
+        header='Sorry'
+        content={this.state.errorMsg}
+        onDismiss={() => this.setState({ errorMsg: '' })
+        }
+      />)
+
     return (
       <Grid stackable columns={2}>
         <Grid.Column>
@@ -202,26 +258,29 @@ console.log('render() called')
               theme={{ photoImg: { width: '100%' } }}
             />
           </div>
-          <canvas id='canvas'/>
+          <canvas id='canvas0' />
+          <canvas id='canvas1' />
         </Grid.Column>
         <Grid.Column>
           <Segment>
-            {/* <Segment> */}
-            Photo size: {this.state.photoData.fullsize.width}x{this.state.photoData.fullsize.height} |
-              Uploaded at: {formatDate(this.state.photoData.createdAt)}
-            {/* </Segment> */}
+            <p>Photo size: {this.state.photoData.fullsize.width}x{this.state.photoData.fullsize.height} |
+              Uploaded at: {formatDate(this.state.photoData.createdAt)}</p>
+            <i>(Percentage numbers indicate confidence)</i>
 
-            <Segment inverted><Header as='h3' inverted color='olive'>Object and Scene Recognition:</Header></Segment>
-            {this.displayArray(this.state.photoData.labels)}
+            <Segment inverted color='grey' style={{ paddingTop: '8px', paddingBottom: '8px' }}><Header as='h3' color='olive'>Object and Scene Recognition:</Header></Segment>
+            {this.displayArray(this.state.photoData.labels.map(item => [item.Name, item.Confidence.toFixed() + '%'])
+            )}
 
-            <Segment inverted><Header as='h3' inverted color='olive'>Words and Numbers Recognition:</Header></Segment>
-            {this.displayArray(this.state.photoData.words)}
+            <Segment inverted color='grey' style={{ paddingTop: '8px', paddingBottom: '8px' }}><Header as='h3' color='olive'>Words and Numbers Recognition: {this.displayButton(1)}</Header></Segment>
+            {this.displayArray(this.state.photoData.words.map(item => {
+              return [item.DetectedText, item.Confidence.toFixed() + '%']
+            })
+            )}
 
-            <Segment inverted><Header as='h3' inverted color='olive'>Facial Recognition: <Button size='mini' floated='right' style={{ marginLeft: '10px' }}
-              onClick={this.state.facesShown ? this.clearCanvas : this.draw}
-              disabled={!this.state.hasFaces} 
-              content={this.state.facesShown ? 'Clear' : 'Mark the image'} />
-      </Header></Segment>
+            <Segment inverted color='grey' style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+              <Header as='h3' color='olive'>Facial Recognition: {this.displayButton(0)}
+              </Header>
+            </Segment>
             {this.state.hasFaces && this.displayMultiFaces(this.state.photoData.faces)}
           </Segment>
         </Grid.Column >

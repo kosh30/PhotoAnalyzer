@@ -8,7 +8,7 @@ const GetAlbum = `query GetAlbum($id: ID!, $nextTokenForPhotos: String) {
   getAlbum(id: $id) {
   id
   name
-  photos(sortDirection: DESC, nextToken: $nextTokenForPhotos) {
+  photos(sortDirection: DESC, nextToken: $nextTokenForPhotos, limit: 11) {
     nextToken
     items {
       id
@@ -36,20 +36,22 @@ class AlbumDetailsLoader extends Component {
       nextTokenForPhotos: null,
       hasMorePhotos: true,
       album: null,
-      loading: true
+      loading: true,
+      errorMsg: ''
     }
   }
 
   async loadMorePhotos() {
-    console.log('inside loadMorePhotos')
     if (!this.state.hasMorePhotos) return;
-    //var data = null;
 
-    this.setState({ loading: true });
+    this.setState({ loading: true, errorMsg: '' });
     try {
       var { data } = await API.graphql(graphqlOperation(GetAlbum, { id: this.props.id, nextTokenForPhotos: this.state.nextTokenForPhotos }));
+      console.log('nextTokenForPhotos: ',data.getAlbum.photos.nextToken)
     } catch (err) {
-      console.error('Error loading album photos: ',err);  
+      console.error('Error loading album photos: ', err);
+      this.setState({ errorMsg: err.errors[0].message, loading: false })
+      return;
     }
 
     let album;
@@ -111,22 +113,28 @@ class AlbumDetailsLoader extends Component {
       //   else console.log(data);
       // });
       s3.deleteObject(params1, function (err, data) {
-        if (err) console.log('Error deleting thumbnail from S3', err, err.stack);
+        if (err) {
+          console.log('Error deleting thumbnail from S3', err, err.stack);
+          throw err;
+        }
         else console.log('thumbnail deleted from S3: ', data);
       });
       let params2 = { Bucket: deleted.bucket, Key: deleted.fullsize.key };
       s3.deleteObject(params2, function (err, data) {
-        if (err) console.log('Error deleting fullsize from S3', err, err.stack);
+        if (err) {
+          console.log('Error deleting fullsize from S3', err, err.stack);
+          throw err;
+        }
         else console.log('fullsize deleted from S3: ', data);
       });
-
-    } catch (e) {
-      console.error("Error deleting photo: ", e)
+    } catch (err) {
+      console.error("Error deleting photo: ", err)
+      this.setState({ errorMsg: err.errors[0].message, loading: false })
+      return;
     }
   }
 
   needReloadPhotos = () => {
-    console.log('inside needReloadphotos')
     this.setState({
       loading: true
     });
@@ -147,17 +155,23 @@ class AlbumDetailsLoader extends Component {
   }
 
   render() {
-    return (<>
-      {
-        this.state.loading && (<Message icon>
-          <Icon name='circle notched' loading />
-          <Message.Content>
-            <Message.Header>Please wait</Message.Header>
-            Your photo is being analyzed ...
-          </Message.Content>
-        </Message>)
+    if (this.state.errorMsg) {
+      return (<Message
+        header='Sorry'
+        content={this.state.errorMsg}
+        onDismiss={()=>this.setState({ errorMsg:'' })
       }
+      />)
+    } else if (this.state.loading)
+      return (<Message icon>
+        <Icon name='circle notched' loading />
+        <Message.Content>
+          <Message.Header>Please wait</Message.Header>
+          Your photo is being analyzed ...
+        </Message.Content>
+      </Message>)
 
+    return (<>
       <AlbumDetails
         loadingPhotos={this.state.loading}
         album={this.state.album}

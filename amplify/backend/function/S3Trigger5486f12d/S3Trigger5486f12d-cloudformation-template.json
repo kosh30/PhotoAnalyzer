@@ -69,7 +69,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "picinfo-master-20191017144455-deployment",
-					"S3Key": "amplify-builds/S3Trigger5486f12d-7651666b6e4d4b464a4a-build.zip"
+					"S3Key": "amplify-builds/S3Trigger5486f12d-6e316d797374356b6c6f-build.zip"
 				}
 			}
 		},

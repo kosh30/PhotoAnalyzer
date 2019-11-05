@@ -1,8 +1,8 @@
 const AWS = require('aws-sdk');
 const S3 = new AWS.S3({ signatureVersion: 'v4' });
-const DynamoDBDocClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+const DynamoDBDocClient = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-08-10' });
 const uuidv4 = require('uuid/v4');
-const gm = require('gm').subClass({imageMagick: true});
+const gm = require('gm').subClass({ imageMagick: true });
 const { promisify } = require('util');
 const Rekognition = new AWS.Rekognition();
 
@@ -15,15 +15,15 @@ async function getLabelNames(bucketName, key) {
   let params = {
     Image: {
       S3Object: {
-        Bucket: bucketName, 
+        Bucket: bucketName,
         Name: key
       }
-    }, 
-    MaxLabels: 50, 
+    },
+    MaxLabels: 50,
     MinConfidence: 70
   };
-  const detectionResult = await Rekognition.detectLabels(params).promise();
-  const labelNames = detectionResult.Labels.map((l) => l.Name.toLowerCase()); 
+  const { Labels } = await Rekognition.detectLabels(params).promise();
+  const labelNames = Labels.filter(item => item.Confidence > 70);
   return labelNames;
 }
 
@@ -37,9 +37,8 @@ async function getTexts(bucketName, key) {
     },
   };
 
-  const detectionResult = await Rekognition.detectText(params).promise();
-  const recWords = detectionResult.TextDetections.filter( item => item.Type === 'LINE' && item.Confidence > 70).map(item => item.DetectedText)
-  //console.log(detectionResult);
+  const {TextDetections} = await Rekognition.detectText(params).promise();
+  const recWords = TextDetections.filter(item => item.Type === 'LINE' && item.Confidence > 70);
   console.log('recWords: ', recWords);
   return recWords;
 }
@@ -62,25 +61,25 @@ async function getFaces(bucketName, key) {
   return recFaces;
 }
 
-function storePhotoInfo(item) {
-	const params = {
-		Item: item,
-		TableName: DYNAMODB_PHOTOS_TABLE_NAME
-	};
-	return DynamoDBDocClient.put(params).promise();
+async function storePhotoInfo(item) {
+  const params = {
+    Item: item,
+    TableName: DYNAMODB_PHOTOS_TABLE_NAME
+  };
+  return DynamoDBDocClient.put(params).promise();
 }
 
 async function getMetadata(bucketName, key) {
-	const headResult = await S3.headObject({Bucket: bucketName, Key: key }).promise();
-	return headResult.Metadata;
+  const headResult = await S3.headObject({ Bucket: bucketName, Key: key }).promise();
+  return headResult.Metadata;
 }
 
 function thumbnailKey(filename) {
-	return `public/resized/${filename}`;
+  return `public/resized/${filename}`;
 }
 
 function fullsizeKey(filename) {
-	return `public/${filename}`;
+  return `public/${filename}`;
 }
 
 async function resize(bucketName, key) {
@@ -90,12 +89,12 @@ async function resize(bucketName, key) {
 
   const gmStream = gm(originalPhoto);
   const getSizeProm = promisify(gmStream.size).bind(gmStream);
-  let originalPhotoDimensions = {width: 0, height: 0};
+  let originalPhotoDimensions = { width: 0, height: 0 };
   try {
     originalPhotoDimensions = await getSizeProm();
     console.log('got origin dimension: ', originalPhotoDimensions)
-  } catch(err){
-    console.error("Error getting size: ",err)
+  } catch (err) {
+    console.error("Error getting size: ", err)
   }
 
   // const thumbnail = await makeThumbnail(originalPhoto);
@@ -106,71 +105,95 @@ async function resize(bucketName, key) {
     thumbnail = await toBufferProm();
     console.log('Resize done')
   } catch (err) {
-    console.error("Error resizing: ",err)
+    console.error("Error resizing: ", err)
   }
 
-	await Promise.all([
-		S3.putObject({
-			Body: thumbnail,
-			Bucket: bucketName,
-			Key: thumbnailKey(originalPhotoName),
-		}).promise(),
+  await Promise.all([
+    S3.putObject({
+      Body: thumbnail,
+      Bucket: bucketName,
+      Key: thumbnailKey(originalPhotoName),
+    }).promise(),
 
-		S3.copyObject({
-			Bucket: bucketName,
-			CopySource: bucketName + '/' + key,
-			Key: fullsizeKey(originalPhotoName),
-		}).promise(),
-	]);
+    S3.copyObject({
+      Bucket: bucketName,
+      CopySource: bucketName + '/' + key,
+      Key: fullsizeKey(originalPhotoName),
+    }).promise(),
+  ]);
 
-	await S3.deleteObject({
-		Bucket: bucketName,
-		Key: key
-	}).promise();
+  await S3.deleteObject({
+    Bucket: bucketName,
+    Key: key
+  }).promise();
 
-	return {
-		photoId: originalPhotoName,
-		
-		thumbnail: {
-			key: thumbnailKey(originalPhotoName),
-			width: THUMBNAIL_WIDTH,
-			height: THUMBNAIL_HEIGHT
-		},
+  return {
+    photoId: originalPhotoName,
 
-		fullsize: {
-			key: fullsizeKey(originalPhotoName),
-			width: originalPhotoDimensions.width,
-			height: originalPhotoDimensions.height
-		}
-	};
+    thumbnail: {
+      key: thumbnailKey(originalPhotoName),
+      width: THUMBNAIL_WIDTH,
+      height: THUMBNAIL_HEIGHT
+    },
+
+    fullsize: {
+      key: fullsizeKey(originalPhotoName),
+      width: originalPhotoDimensions.width,
+      height: originalPhotoDimensions.height
+    }
+  };
 };
 
 async function processRecord(record) {
-	const bucketName = record.s3.bucket.name;
-	const key = record.s3.object.key;
-	
-	if (key.indexOf('uploads') !== 0) return;
-	
-	const metadata = await getMetadata(bucketName, key);
-	const sizes = await resize(bucketName, key);    
+  const bucketName = record.s3.bucket.name;
+  const key = record.s3.object.key;
+  let searchPhrases = [];
+
+  if (key.indexOf('uploads') !== 0) return;
+
+  const metadata = await getMetadata(bucketName, key);
+  const sizes = await resize(bucketName, key);
   if (!sizes) throw Error;
-  const labelNames = await getLabelNames(bucketName, sizes.fullsize.key);
-  const recWords = await getTexts(bucketName, sizes.fullsize.key);
-  const recFaces = (await getFaces(bucketName, sizes.fullsize.key)).map(item=>JSON.stringify(item));
+
+  const labelNames = (await getLabelNames(bucketName, sizes.fullsize.key)).map(item => {
+    item.Name && searchPhrases.push(item.Name.toLowerCase());
+    return JSON.stringify(item);
+  });
+
+  const recWords = (await getTexts(bucketName, sizes.fullsize.key)).map(item => {
+    item.DetectedText && searchPhrases.push(item.DetectedText.toLowerCase());
+    return JSON.stringify(item);
+  })
+
+  const recFaces = (await getFaces(bucketName, sizes.fullsize.key)).map(item => {
+    if (item.Beard.Value) searchPhrases.push('beard');
+    if (item.Mustache.Value) searchPhrases.push('mustache');
+    if (item.Sunglasses.Value) searchPhrases.push('sunglasses');
+    if (item.Eyeglasses.Value) searchPhrases.push('eyeglasses');
+    if (item.Smile.Value) searchPhrases.push('smile');
+    searchPhrases.push(item.Gender.Value.toLowerCase());
+    if (item.Emotions) {
+      item.Emotions.filter(v => v.Confidence > 25).forEach(
+        v => { searchPhrases.push(v.Type.toLowerCase()) }
+      )
+    }
+    return JSON.stringify(item);
+  });
 
   const id = uuidv4();
-	const item = {
+  const item = {
     id: id,
+    owner: metadata.owner,
+    createdAt: new Date().getTime().toString(),
     photoAlbumId: metadata.albumid,
-		bucket: bucketName,
-		fullsize: sizes.fullsize,
-		thumbnail: sizes.thumbnail,
+    bucket: bucketName,
+    fullsize: sizes.fullsize,
+    thumbnail: sizes.thumbnail,
     labels: labelNames,
     words: recWords,
     faces: recFaces,
-    owner: metadata.owner,
-		createdAt: new Date().getTime().toString()
-	}
+    searchPhrases
+  }
   try {
     await storePhotoInfo(item);
   } catch (err) {
@@ -179,12 +202,12 @@ async function processRecord(record) {
 }
 
 exports.handler = async (event, context, callback) => {
-	try {
-		event.Records.forEach(processRecord);
-		callback(null, { status: 'Photo Processed' });
-	}
-	catch (err) {
-		console.error(err);
-		callback(err);
-	}
+  try {
+    event.Records.forEach(processRecord);
+    callback(null, { status: 'Photo Processed' });
+  }
+  catch (err) {
+    console.error(err);
+    callback(err);
+  }
 };

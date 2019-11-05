@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import { Header, Input, Segment } from 'semantic-ui-react';
+import { Header, Input, Segment, Message } from 'semantic-ui-react';
 import { API, graphqlOperation } from 'aws-amplify';
 import PhotosList from './PhotosList';
 
 const ListPhotos = `query listPhotos($label: String!) {
-  listPhotos(filter: { labels: { contains: $label }}) {
+  listPhotos(filter: { searchPhrases: { contains: $label }}) {
     items {
       id
       bucket
@@ -34,7 +34,8 @@ class Search extends Component {
       album: null,
       label: '',
       hasResults: false,
-      searched: false
+      searched: false,
+      errorMsg: ''
     }
   }
 
@@ -43,10 +44,15 @@ class Search extends Component {
   }
 
   getPhotosForLabel = async (e) => {
-    console.log('Enter getPhotosForLabel:label=', this.state.label)
+    console.log('Search: label=', this.state.label)
     e.preventDefault();
-    const result = await API.graphql(graphqlOperation(ListPhotos, { label: this.state.label }));
-console.log("result=", result)
+    try {
+      var result = await API.graphql(graphqlOperation(ListPhotos, { label: this.state.label.toLowerCase() }));
+    } catch (err) {
+      console.error(err);
+      this.setState({ errorMsg: err.errors[0].message });
+    }
+
     let photos = [];
     let label = '';
     let hasResults = false;
@@ -68,7 +74,7 @@ console.log("result=", result)
   componentDidMount() {
     const input = document.getElementById("label");
 
-    input.addEventListener("keyup", (event)=> {
+    input.addEventListener("keyup", (event) => {
       // Number 13 is the "Enter" key on the keyboard
       if (event.keyCode === 13) {
         // Cancel the default action, if needed
@@ -80,6 +86,14 @@ console.log("result=", result)
   }
 
   render() {
+    if (this.state.errorMsg)
+      return (<Message
+        header='Sorry'
+        content={this.state.errorMsg}
+        onDismiss={() => this.setState({ errorMsg: '' })
+        }
+      />)
+
     return (
       <Segment>
         <Header as='h3'>Tag Search</Header>
@@ -94,6 +108,7 @@ console.log("result=", result)
           value={this.state.label}
           onChange={this.updateLabel}
         />
+        <p><i>Case insensitive. Search phrase must fully match a tag.</i></p>
         {
           this.state.hasResults
             ? <PhotosList photos={this.state.searchResults.photos} />

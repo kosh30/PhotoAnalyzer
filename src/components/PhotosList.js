@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Divider, Segment, Label, Icon, Card } from 'semantic-ui-react';
+import { Divider, Label, Icon, Card } from 'semantic-ui-react';
 import { S3Image } from 'aws-amplify-react';
 import { formatDate } from '../util';
 
@@ -13,20 +13,12 @@ class PhotosList extends Component {
   }
 
   handlePhotoClick = (photo) => {
-    console.log("selected photo = ", photo)
     this.setState({
       selectedPhoto: photo
     });
   }
 
-  handleLightboxClose = () => {
-    this.setState({
-      selectedPhoto: null
-    });
-  }
-
   handleDelete = (photo) => {
-    console.log("Deleting: ", photo)
     this.props.onDeletePhoto(photo);
   }
 
@@ -47,7 +39,7 @@ class PhotosList extends Component {
             </Label>
             <Card.Description style={{fontSize:'0.6em'}}>
               Uploaded at: 
-              {formatDate(photo.createdAt)}
+              <p>{formatDate(photo.createdAt)}</p>
             </Card.Description>
           </Card.Content>
         </Card>

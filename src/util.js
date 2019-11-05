@@ -20,8 +20,8 @@ function formatDate(dateString) {
   const year = dateObj.getFullYear();
   const hours = dateObj.getHours();
   const minutes = dateObj.getMinutes();
-
-  return `${month}/${date}/${year} ${hours}:${minutes}`;
+  
+  return `${month}/${date}/${year} ${hours}:${minutes<10?0:''}${minutes}`;
 }
 
 export { makeComparator, formatDate };
